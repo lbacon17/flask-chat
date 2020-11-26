@@ -1,26 +1,37 @@
 import os
-from flask import Flask, redirect
+from datetime import datetime
+from flask import Flask, redirect, render_template, request, session
 
 app = Flask(__name__)
-
+app.secret_key = "randomstring123"
 messages = []
 
 
 def add_messages(username, message): #add messages to the messages list
-    messages.append("{}: {}".format(username, message))
+    now = datetime.now().strftime("%H:%M:%S")
+    messages_dict = {
+        "timestamp": now,
+        "from": username,
+        "message": message
+    }
 
-def get_all_messages(): #gets all messages and separates using <br>
-    return "<br>".join(messages)
+    messages.append(messages_dict)
 
-@app.route("/")
+@app.route("/", methods = ["GET", "POST"])
 def index():
     #Main page with instructions
-    return "To send a message use /USERNAME/MESSAGE"
+    if request.method == "POST":
+        session["username"] = request.form["username"]
+
+    if "username" in session:
+        return redirect(session["username"])
+
+    return render_template("index.html")
 
 
 @app.route("/<username>")
 def user(username): #display chat messages
-    return "<h1>Welcome, {0}</h1> {1}".format(username, get_all_messages())
+    return render_template("chat.html", username = username, chat_messages = messages)
 
 
 @app.route("/<username>/<message>")
